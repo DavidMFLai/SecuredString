@@ -13,7 +13,7 @@ public:
 private:
 	T *data;
 	unsigned int datacnt;
-	bool owningData;
+	//bool owningData;
 	bool comparememory(void *lhs, void *rhs, unsigned int length) const;
 
 public:
@@ -55,10 +55,6 @@ void swap(SecuredString<T> &lhs, SecuredString<T> &rhs)
 	T *tmp_data = lhs.data;
 	lhs.data = rhs.data;
 	rhs.data = tmp_data;
-
-	bool tmp_owningData = lhs.owningData;
-	lhs.owningData = rhs.owningData;
-	rhs.owningData = tmp_owningData;
 
 	unsigned int tmp_datacnt = lhs.datacnt;
 	lhs.datacnt = rhs.datacnt;
@@ -115,14 +111,11 @@ void SecuredString<T>::gainControl(T *data)
 		this->datacnt++;
 		data++;
 	}
-
-	this->owningData = true;
-
 }
 
 template <typename T>
 SecuredString<T>::SecuredString()
-	: data{ nullptr }, datacnt{ 1 }, owningData{ false }
+	: data{ nullptr }, datacnt{ 0 }
 {
 
 }
@@ -137,7 +130,7 @@ SecuredString<T> &SecuredString<T>::operator=(SecuredString rhs)
 
 template <typename T>
 SecuredString<T>::SecuredString(T *data)
-	:owningData{ true }, datacnt{ 1 } //cuz there is always at least a null character
+	:datacnt{ 1 } //cuz there is always at least a null character
 {
 	//find data count
 	T *tmp = data;
@@ -154,7 +147,7 @@ SecuredString<T>::SecuredString(T *data)
 
 template <typename T>
 SecuredString<T>::SecuredString(const SecuredString &rhs)
-	:data{ nullptr }, owningData{ rhs.owningData }, datacnt{rhs.datacnt}
+	:data{ nullptr }, datacnt{rhs.datacnt}
 {
 	if (datacnt != 0)
 	{
@@ -169,13 +162,13 @@ SecuredString<T>::SecuredString(SecuredString &&rhs)
 	:SecuredString{ rhs }
 {
 	rhs.data = nullptr;
-	rhs.owningData = false;
+	rhs.datacnt = 0;
 }
 
 template <typename T>
 SecuredString<T>::~SecuredString()
 {
-	if (owningData)
+	if (datacnt != 0)
 	{
 		SecureZeroMemory(data, datacnt*sizeof(T));
 		delete[] data;
@@ -192,7 +185,7 @@ template <typename T>
 T *SecuredString<T>::release()
 {
 	T *retval = data;
-	owningData = false;
+	datacnt = 0;
 	data = nullptr;
 	return retval;
 }
