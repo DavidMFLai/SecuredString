@@ -6,15 +6,15 @@
 template <typename T>
 class SecuredString
 {
+	static const size_t npos = -1;
 public:
 	template<typename T2>
 	friend void swap(SecuredString<T2> &, SecuredString<T2> &);
 
 private:
 	T *data;
-	unsigned int datacnt;
-	//bool owningData;
-	bool comparememory(void *lhs, void *rhs, unsigned int length) const;
+	size_t datacnt;
+	bool comparememory(void *lhs, void *rhs, size_t length) const;
 
 public:
 	SecuredString();
@@ -32,16 +32,17 @@ public:
 	const SecuredString operator+(const SecuredString &other) const;
 
 	T *c_str() const;
+	SecuredString substr(size_t pos = 0, size_t len = npos) const;
 	T *release();
 
 	//for testing use
-	unsigned int __get_length();
+	size_t __get_length();
 };
 
 template <typename T>
-bool SecuredString<T>::comparememory(void *lhs, void *rhs, unsigned int length) const
+bool SecuredString<T>::comparememory(void *lhs, void *rhs, size_t length) const
 {
-	for (unsigned int counter = 0; counter < length; counter++)
+	for (size_t counter = 0; counter < length; counter++)
 	{
 		if (*static_cast<unsigned char *>(lhs) != *static_cast<unsigned char *>(rhs))
 			return false;
@@ -56,13 +57,32 @@ void swap(SecuredString<T> &lhs, SecuredString<T> &rhs)
 	lhs.data = rhs.data;
 	rhs.data = tmp_data;
 
-	unsigned int tmp_datacnt = lhs.datacnt;
+	size_t tmp_datacnt = lhs.datacnt;
 	lhs.datacnt = rhs.datacnt;
 	rhs.datacnt = tmp_datacnt;
 }
 
 template <typename T>
-const SecuredString<T> SecuredString<T>::operator+(const SecuredString<T> &other) const {
+SecuredString<T> SecuredString<T>::substr(size_t pos = 0, size_t len = npos) const
+{
+	if (len > datacnt - pos - 1)
+	{
+		len = datacnt - pos - 1;
+	}
+
+	SecuredString<T> retval;
+	//create data
+	retval.datacnt = len + 1; //datacnt always include the padding \0
+	retval.data = new T[retval.datacnt];
+	memcpy(retval.data, data + pos, len*sizeof(T));
+	retval.data[retval.datacnt - 1] = '\0';
+
+	return retval;
+}
+
+template <typename T>
+const SecuredString<T> SecuredString<T>::operator+(const SecuredString<T> &other) const 
+{
 	SecuredString<T> result = *this;
 	result += other;
 	return result;
@@ -191,7 +211,7 @@ T *SecuredString<T>::release()
 }
 
 template < typename T >
-unsigned int SecuredString<T>::__get_length()
+size_t SecuredString<T>::__get_length()
 {
 	return datacnt;
 }
