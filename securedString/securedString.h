@@ -6,15 +6,15 @@
 template <typename T>
 class SecuredString
 {
+	static const size_t npos = -1;
 public:
 	template<typename T2>
 	friend void swap(SecuredString<T2> &, SecuredString<T2> &);
 
 private:
 	T *data;
-	unsigned int datacnt;
-	bool owningData;
-	bool comparememory(void *lhs, void *rhs, unsigned int length) const;
+	size_t datacnt;
+	bool comparememory(void *lhs, void *rhs, size_t length) const;
 
 public:
 	SecuredString();
@@ -26,21 +26,23 @@ public:
 
 	~SecuredString();
 	bool operator==(const SecuredString &other) const;
+	bool operator!=(const SecuredString &other) const;
 	SecuredString &operator=(SecuredString);
 	SecuredString &operator+=(const SecuredString &rhs);
 	const SecuredString operator+(const SecuredString &other) const;
 
 	T *c_str() const;
+	SecuredString substr(size_t pos = 0, size_t len = npos) const;
 	T *release();
 
 	//for testing use
-	unsigned int __get_length();
+	size_t __get_length();
 };
 
 template <typename T>
-bool SecuredString<T>::comparememory(void *lhs, void *rhs, unsigned int length) const
+bool SecuredString<T>::comparememory(void *lhs, void *rhs, size_t length) const
 {
-	for (unsigned int counter = 0; counter < length; counter++)
+	for (size_t counter = 0; counter < length; counter++)
 	{
 		if (*static_cast<unsigned char *>(lhs) != *static_cast<unsigned char *>(rhs))
 			return false;
@@ -55,17 +57,32 @@ void swap(SecuredString<T> &lhs, SecuredString<T> &rhs)
 	lhs.data = rhs.data;
 	rhs.data = tmp_data;
 
-	bool tmp_owningData = lhs.owningData;
-	lhs.owningData = rhs.owningData;
-	rhs.owningData = tmp_owningData;
-
-	unsigned int tmp_datacnt = lhs.datacnt;
+	size_t tmp_datacnt = lhs.datacnt;
 	lhs.datacnt = rhs.datacnt;
 	rhs.datacnt = tmp_datacnt;
 }
 
 template <typename T>
-const SecuredString<T> SecuredString<T>::operator+(const SecuredString<T> &other) const {
+SecuredString<T> SecuredString<T>::substr(size_t pos = 0, size_t len = npos) const
+{
+	if (len > datacnt - pos - 1)
+	{
+		len = datacnt - pos - 1;
+	}
+
+	SecuredString<T> retval;
+	//create data
+	retval.datacnt = len + 1; //datacnt always include the padding \0
+	retval.data = new T[retval.datacnt];
+	memcpy(retval.data, data + pos, len*sizeof(T));
+	retval.data[retval.datacnt - 1] = '\0';
+
+	return retval;
+}
+
+template <typename T>
+const SecuredString<T> SecuredString<T>::operator+(const SecuredString<T> &other) const 
+{
 	SecuredString<T> result = *this;
 	result += other;
 	return result;
@@ -77,6 +94,12 @@ bool SecuredString<T>::operator == (const SecuredString<T> &other) const
 	if (datacnt != other.datacnt)
 		return false;
 	return comparememory(reinterpret_cast<void *>(data), reinterpret_cast<void *>(other.data), datacnt*sizeof(T));
+}
+
+template <typename T>
+bool SecuredString<T>::operator != (const SecuredString<T> &other) const
+{
+	return !this->operator==(other);
 }
 
 template<typename T>
@@ -108,14 +131,11 @@ void SecuredString<T>::gainControl(T *data)
 		this->datacnt++;
 		data++;
 	}
-
-	this->owningData = true;
-
 }
 
 template <typename T>
 SecuredString<T>::SecuredString()
-	: data{ nullptr }, datacnt{ 1 }, owningData{ false }
+	: data{ nullptr }, datacnt{ 0 }
 {
 
 }
@@ -130,7 +150,7 @@ SecuredString<T> &SecuredString<T>::operator=(SecuredString rhs)
 
 template <typename T>
 SecuredString<T>::SecuredString(T *data)
-	:owningData{ true }, datacnt{ 1 } //cuz there is always at least a null character
+	:datacnt{ 1 } //cuz there is always at least a null character
 {
 	//find data count
 	T *tmp = data;
@@ -147,7 +167,7 @@ SecuredString<T>::SecuredString(T *data)
 
 template <typename T>
 SecuredString<T>::SecuredString(const SecuredString &rhs)
-	:data{ nullptr }, owningData{ rhs.owningData }, datacnt{rhs.datacnt}
+	:data{ nullptr }, datacnt{rhs.datacnt}
 {
 	if (datacnt != 0)
 	{
@@ -162,13 +182,13 @@ SecuredString<T>::SecuredString(SecuredString &&rhs)
 	:SecuredString{ rhs }
 {
 	rhs.data = nullptr;
-	rhs.owningData = false;
+	rhs.datacnt = 0;
 }
 
 template <typename T>
 SecuredString<T>::~SecuredString()
 {
-	if (owningData)
+	if (datacnt != 0)
 	{
 		SecureZeroMemory(data, datacnt*sizeof(T));
 		delete[] data;
@@ -185,13 +205,13 @@ template <typename T>
 T *SecuredString<T>::release()
 {
 	T *retval = data;
-	owningData = false;
+	datacnt = 0;
 	data = nullptr;
 	return retval;
 }
 
 template < typename T >
-unsigned int SecuredString<T>::__get_length()
+size_t SecuredString<T>::__get_length()
 {
 	return datacnt;
 }

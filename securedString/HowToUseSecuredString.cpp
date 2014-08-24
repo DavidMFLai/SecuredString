@@ -42,9 +42,11 @@ TEST_F(HowToUseSecuredStringTest, compare)
 	SecuredString<wchar_t> securedString1{ rawString };
 	SecuredString<wchar_t> securedString2{ rawString };
 	ASSERT_THAT(securedString1 == securedString2, ::testing::Eq(true));
+	ASSERT_THAT(securedString1 != securedString2, ::testing::Eq(false));
 
 	SecuredString<wchar_t> securedString3{ rawString2 };
 	ASSERT_THAT(securedString1 == securedString3, ::testing::Eq(false));
+	ASSERT_THAT(securedString1 != securedString3, ::testing::Eq(true));
 }
 
 TEST_F(HowToUseSecuredStringTest, append)
@@ -69,4 +71,15 @@ TEST_F(HowToUseSecuredStringTest, concatenate)
 	std::wstring mergedstring{ std::wstring{ rawString } + std::wstring{ rawString2 } };
 	std::wstring mergedsecuredstring = securedString3.c_str();
 	ASSERT_THAT(mergedstring == mergedsecuredstring, ::testing::Eq(true));
+}
+
+TEST_F(HowToUseSecuredStringTest, substr)
+{
+	SecuredString<wchar_t> securedString1{ rawString };
+	SecuredString<wchar_t> securedString2 = securedString1.substr(3);
+	
+	std::wstring stdwstring1{rawString};
+	std::wstring stdwstring2 = stdwstring1.substr(3);
+
+	ASSERT_THAT(stdwstring2 == std::wstring{ securedString2.c_str() }, ::testing::Eq(true));
 }
