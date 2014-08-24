@@ -26,6 +26,7 @@ public:
 
 	~SecuredString();
 	bool operator==(const SecuredString &other) const;
+	bool operator!=(const SecuredString &other) const;
 	SecuredString &operator=(SecuredString);
 	SecuredString &operator+=(const SecuredString &rhs);
 	const SecuredString operator+(const SecuredString &other) const;
@@ -77,6 +78,12 @@ bool SecuredString<T>::operator == (const SecuredString<T> &other) const
 	if (datacnt != other.datacnt)
 		return false;
 	return comparememory(reinterpret_cast<void *>(data), reinterpret_cast<void *>(other.data), datacnt*sizeof(T));
+}
+
+template <typename T>
+bool SecuredString<T>::operator != (const SecuredString<T> &other) const
+{
+	return !this->operator==(other);
 }
 
 template<typename T>

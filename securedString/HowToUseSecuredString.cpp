@@ -42,9 +42,11 @@ TEST_F(HowToUseSecuredStringTest, compare)
 	SecuredString<wchar_t> securedString1{ rawString };
 	SecuredString<wchar_t> securedString2{ rawString };
 	ASSERT_THAT(securedString1 == securedString2, ::testing::Eq(true));
+	ASSERT_THAT(securedString1 != securedString2, ::testing::Eq(false));
 
 	SecuredString<wchar_t> securedString3{ rawString2 };
 	ASSERT_THAT(securedString1 == securedString3, ::testing::Eq(false));
+	ASSERT_THAT(securedString1 != securedString3, ::testing::Eq(true));
 }
 
 TEST_F(HowToUseSecuredStringTest, append)
